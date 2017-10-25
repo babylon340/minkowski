@@ -1,4 +1,4 @@
-<html>
+﻿<html>
 <head>
     <meta charset="utf-8" />
     <title>Minkowski Collision Detection</title>
@@ -11,6 +11,8 @@
 
     <script>
         'use strict';
+
+        let gravity = 0.0001;
 
         function GetGameLoop(canvas, fps, world)
         {
@@ -30,6 +32,30 @@
                 }
             });
 
+            function clearCollisions(current)
+            {
+                current.colliding = false;
+            }
+            function detectCollisions(current, index, array)
+            {
+                for(let i = index + 1; i < array.length; ++i)
+                {
+                    if(collision_box_box(current, array[i]))
+                    {
+                        current.colliding = true;
+                        array[i].colliding = true;
+                    }
+                }
+            }
+            function Update(current)
+            {
+                current.Update(timestep);
+            }
+            function Render(current)
+            {
+                current.Render(context);
+            }
+
             function loop(timecode)
             {
                 timeLeft += (timecode - lastTime);
@@ -37,12 +63,14 @@
 
                 while(timeLeft >= timestep)
                 {
-                    world.forEach(x => x.Update(timestep));
+                    world.forEach(clearCollisions);
+                    world.forEach(Update);
+                    world.forEach(detectCollisions);
                     timeLeft -= timestep;
                 }
 
                 context.clearRect(0, 0, canvas.width, canvas.height);
-                world.forEach(x => x.Render(context));
+                world.forEach(Render);
 
                 if(running)
                 {
@@ -57,39 +85,46 @@
         {
             this.x = x;
             this.y = y;
+            this.dy = 0;
             this.w = w;
             this.h = h;
 
+            this.colliding = false;
+
             this.Update = function(timestep)
             {
+                this.y += this.dy * timestep;
+                this.dy += gravity * timestep;
             };
 
             this.Render = function(context)
             {
                 context.beginPath();
+                context.strokeStyle = this.colliding ? '#ff0000' : '#000000';
                 context.rect(this.x, this.y, this.w, this.h);
                 context.stroke();
                 context.closePath();
             };
         }
 
-        function Circle(x, y, r)
+        function collision_box_box(lBox, rBox)
         {
-            this.x = x;
-            this.y = y;
-            this.r = r;
-
-            this.Update = function(timestep)
+            //minkowski aabb
+            let m =
             {
+                x: lBox.x - rBox.x - rBox.w,
+                y: lBox.y - rBox.y - rBox.h,
+                w: lBox.w + rBox.w,
+                h: lBox.h + rBox.h
             };
 
-            this.Render = function(context)
-            {
-                context.beginPath();
-                context.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-                context.stroke();
-                context.closePath();
-            };
+            let result =
+                m.x <= 0 &&
+                m.x + m.w >= 0 &&
+                m.y <= 0 &&
+                m.y + m.h >= 0;
+
+            return result;
         }
 
         window.addEventListener('load', function()
