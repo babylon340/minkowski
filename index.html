@@ -1,0 +1,119 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Minkowski Collision Detection</title>
+    <style>
+        canvas
+        {
+            width:100%;
+        }
+    </style>
+
+    <script>
+        'use strict';
+
+        function GetGameLoop(canvas, fps, world)
+        {
+            let context = canvas.getContext('2d');
+            context.lineWidth = 4;
+
+            let timestep = fps / 1000;
+            let lastTime = 0;
+            let timeLeft = 0;
+
+            let running = true;
+            window.addEventListener('keyup', function(event)
+            {
+                if(event.keyCode == 27)
+                {
+                    running = false;
+                }
+            });
+
+            function loop(timecode)
+            {
+                timeLeft += (timecode - lastTime);
+                lastTime = timecode;
+
+                while(timeLeft >= timestep)
+                {
+                    world.forEach(x => x.Update(timestep));
+                    timeLeft -= timestep;
+                }
+
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                world.forEach(x => x.Render(context));
+
+                if(running)
+                {
+                    requestAnimationFrame(loop);
+                }
+            }
+
+            return loop;
+        }
+        
+        function Box(x, y, w, h)
+        {
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+
+            this.Update = function(timestep)
+            {
+            };
+
+            this.Render = function(context)
+            {
+                context.beginPath();
+                context.rect(this.x, this.y, this.w, this.h);
+                context.stroke();
+                context.closePath();
+            };
+        }
+
+        function Circle(x, y, r)
+        {
+            this.x = x;
+            this.y = y;
+            this.r = r;
+
+            this.Update = function(timestep)
+            {
+            };
+
+            this.Render = function(context)
+            {
+                context.beginPath();
+                context.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+                context.stroke();
+                context.closePath();
+            };
+        }
+
+        window.addEventListener('load', function()
+        {
+            let multiplier = 10;
+            let canvas = document.getElementById('canvas');
+            
+            canvas.width *= multiplier;
+            canvas.height *= multiplier;
+
+            let world = [];
+            for(let i = 0; i < 20; ++i)
+            {
+                let box = new Box(Math.floor(Math.random() * canvas.width), Math.floor(Math.random() * canvas.height),
+                    Math.floor(Math.random() * 100), Math.floor(Math.random() * 100));
+                world.push(box);
+            }
+
+            let loop = GetGameLoop(canvas, 60, world);
+            requestAnimationFrame(loop);
+        });
+    </script>
+</head>
+<body>
+    <canvas id="canvas" >If you can read this, you're out of date!</canvas>
+</body>
+</html>
